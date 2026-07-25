@@ -1,2 +1,4 @@
-# Git will always convert line endings to LF on checkout. You should use this for files that must keep LF endings, even on Windows.
-* text eol=lf
+# Repository-wide line ending enforcement (supersedes local core.autocrlf)
+# - Auto-detect text vs binary files
+# - Normalise text files to LF on commit and keep LF on checkout
+* text=auto eol=lf
