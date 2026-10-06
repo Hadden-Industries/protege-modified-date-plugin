@@ -16,17 +16,48 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <!-- Compile against host APIs only; Protégé owns their runtime implementations. -->
     <dependencies>
         <dependency>
             <groupId>edu.stanford.protege</groupId>
             <artifactId>protege-editor-owl</artifactId>
             <version>${protege.version}</version>
             <scope>provided</scope> <!-- Provided by Protégé at runtime -->
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>edu.stanford.protege</groupId>
+            <artifactId>protege-editor-core</artifactId>
+            <version>${protege.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.owlapi</groupId>
-            <artifactId>owlapi-osgidistribution</artifactId>
-            <version>4.5.24</version> <!-- Standard OWLAPI for Protege 5.5 -->
+            <artifactId>owlapi-api</artifactId>
+            <version>4.5.24</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -36,7 +67,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.8</version>
+                <version>6.2.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
@@ -44,6 +75,11 @@
                         <Bundle-Name>Modified Date Plugin</Bundle-Name>
                         <Bundle-Version>${project.version}</Bundle-Version>
                         <Export-Package>!*</Export-Package>
+                        <Private-Package>com.haddenindustries.protege.*</Private-Package>
+                        <Embed-Dependency>!*</Embed-Dependency>
+                        <Bundle-ClassPath>.</Bundle-ClassPath>
+                        <!-- Felix 5.4 in Protégé 5.5 rejects explicit java.* imports. -->
+                        <_noimportjava>true</_noimportjava>
                         <Import-Package>
                             org.protege.editor.owl.*;version="[5.0,6)",
                             org.protege.editor.core.*;version="[5.0,6)",
@@ -55,8 +91,74 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>enforce-plugin-api-boundary</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <fail>true</fail>
+                            <rules>
+                                <!-- Check the project graph; embedded bytes and build plugins need separate inspection. -->
+                                <bannedDependencies>
+                                    <searchTransitive>true</searchTransitive>
+                                    <excludes>
+                                        <exclude>*:*</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <include>edu.stanford.protege:protege-editor-owl:*:jar:provided</include>
+                                        <include>edu.stanford.protege:protege-editor-core:*:jar:provided</include>
+                                        <include>net.sourceforge.owlapi:owlapi-api:*:jar:provided</include>
+                                        <include>org.slf4j:slf4j-api:*:jar:provided</include>
+                                    </includes>
+                                    <message>This plugin must use only the declared host-provided APIs; do not add or embed host implementation dependencies.</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.16.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.5.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.5.0</version>
+                <dependencies>
+                    <!-- Replace the affected utility dependency in this build plugin only. -->
+                    <dependency>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-utils</artifactId>
+                        <version>4.1.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.6.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.2.0</version>
             </plugin>
         </plugins>
     </build>

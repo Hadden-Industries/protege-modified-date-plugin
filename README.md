@@ -34,9 +34,9 @@ Developed by [Maksym Shostak](http://orcid.org/0000-0001-8017-8797) in [Hadden I
 
 * **Protégé:** 5.5.0 or higher (Tested on 5.6.9)
 
-* **Java:** JDK 11 or higher (The build targets Java 11 release compatibility for Protégé OSGi constraints)
+* **Java:** JDK 17 or higher to build; Java 11 or higher to run the plugin. The build targets Java 11 bytecode for Protégé OSGi compatibility.
 
-* **Maven:** Apache Maven 3.x
+* **Maven:** Apache Maven 3.6.3 or higher
 
 ## Compilation and Installation (Windows 11)
 
@@ -55,6 +55,16 @@ Developed by [Maksym Shostak](http://orcid.org/0000-0001-8017-8797) in [Hadden I
 7. Paste the `.jar` file into the `plugins` folder.
 
 8. Start or restart Protégé.
+
+The plugin compiles against four host-provided APIs and does not bundle their
+runtime implementations. Maven Enforcer rejects dependencies outside that API
+boundary. Dependencies and the Maven lifecycle plugins configured here use
+pinned versions; OSGi import ranges specify compatible runtime hosts.
+
+Protégé supplies OWLAPI, parsers, logging and other runtime libraries. Removing
+those libraries from this plugin's Maven dependency graph does not patch the
+copies in Protégé or inside upstream bundles. Host security updates must also
+be assessed before using the editor with untrusted ontology input.
 
 ## Usage
 
